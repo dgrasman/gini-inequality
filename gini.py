@@ -6,23 +6,26 @@ from adjustText import adjust_text
 
 indicators = {
     'SI.POV.GINI': 'Gini',
-    'NY.GDP.PCAP.PP.CD' : 'PPP'
+    'NY.GDP.PCAP.PP.CD' : 'GDP_PPP',
+    'NY.GNP.PCAP.PP.CD' : 'GNI_PPP'
 }
 
 countries = ['ARG', 'BLZ', 'BOL', 'BRA', 'CHL', 'COL', 'CRI', 'ECU', 'GUY', 'SLV', 'GTM', 'HND', 'MEX', 'NIC', 'PAN', 'PRY', 'PER', 'SUR', 'URY', 'VEN']
 
-print("Querying World Bank API...")
+print("Getting that data...")
 df = wb.data.DataFrame(indicators.keys(), countries, time=range(2000, 2022), columns='series').reset_index()
 df = df.rename(columns=indicators)
 
 df['time'] = df['time'].str.replace('YR', '').astype(int)
 
-# ratio defined as (Gini * 100) / PPP
-df['ratio'] = (df['Gini'] * 100) / df['PPP']
-df_clean = df.dropna(subset=['ratio']).sort_values('time').groupby('economy').last().reset_index()
+
+df_clean = df.dropna(subset=['Gini']).sort_values('time').groupby('economy').last().reset_index()
+
+# maybe plot this later (Sen's formula) for inequality-adjusted income
+df_clean['W'] = df_clean['GDP_PPP'] * (1 - (df_clean['Gini'] / 100))
 
 # geopandas shapefile
-print("Fetching geographic boundaries...")
+print("Getting the shapefile...")
 shapefile_url = "https://naturalearth.s3.amazonaws.com/110m_cultural/ne_110m_admin_0_countries.zip"
 world = gpd.read_file(shapefile_url)
 map_data = world.merge(df_clean, how='inner', left_on='ADM0_A3', right_on='economy')
@@ -34,11 +37,11 @@ fig, ax = plt.subplots(1, 1, figsize=(16, 14))
 world[world['ADM0_A3'].isin(countries)].plot(ax=ax, color='lightgrey', edgecolor='white')
 
 map_data.plot(
-    column='ratio',
+    column='Gini',
     ax=ax,
     legend=True,
     cmap='viridis', 
-    legend_kwds={'label': "Gini:PPP Ratio", 'shrink': 0.4, 'orientation': 'horizontal', 'pad': 0.02},
+    legend_kwds={'label': "Gini Coefficient", 'shrink': 0.4, 'orientation': 'horizontal', 'pad': 0.02},
     edgecolor='black',
     linewidth=0.5
 )
@@ -48,10 +51,11 @@ map_data.plot(
 map_data['centroid'] = map_data['geometry'].centroid
 map_center_x = map_data['centroid'].x.mean()
 
+# list for text boxes
 texts = []
 
 for idx, row in map_data.iterrows():
-    label_text = f"{row['NAME']}\nRatio: {row['ratio']:.2f}\nYear: {int(row['time'])}"
+    label_text = f"{row['NAME']}\nGini: {row['Gini']:.2f}\nYear: {int(row['time'])}"
     
     # Target the exact middle
     target_x, target_y = row['centroid'].x, row['centroid'].y
@@ -89,7 +93,7 @@ adjust_text(
 total_bounds = map_data.total_bounds
 ax.set_xlim(total_bounds[0] - 15, total_bounds[2] + 15)
 
-ax.set_title('Gini:PPP Ratio in Central and South America', fontsize=18, fontweight='bold', pad=20)
+ax.set_title('Gini Index in Central and South America', fontsize=18, fontweight='bold', pad=20)
 ax.set_axis_off()
 
 plt.tight_layout()
