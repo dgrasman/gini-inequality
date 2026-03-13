@@ -7,7 +7,10 @@ from adjustText import adjust_text
 indicators = {
     'SI.POV.GINI': 'Gini',
     'NY.GDP.PCAP.PP.CD' : 'GDP_PPP',
-    'NY.GNP.PCAP.PP.CD' : 'GNI_PPP'
+    'NY.GNP.PCAP.PP.CD' : 'GNI_PPP',
+    'BX.KLT.DINV.CD.WD' : 'FDI', # foreign direct investment
+    'AG.LND.FRST.ZS' : 'FOREST_AREA', 
+    'EN.GHG.ALL.MT.CE.AR5' : 'TOTAL_GHG' 
 }
 
 countries = ['ARG', 'BLZ', 'BOL', 'BRA', 'CHL', 'COL', 'CRI', 'ECU', 'GUY', 'SLV', 'GTM', 'HND', 'MEX', 'NIC', 'PAN', 'PRY', 'PER', 'SUR', 'URY', 'VEN']
@@ -51,30 +54,27 @@ map_data.plot(
 map_data['centroid'] = map_data['geometry'].centroid
 map_center_x = map_data['centroid'].x.mean()
 
+
 # list for text boxes
 texts = []
 
 for idx, row in map_data.iterrows():
     label_text = f"{row['NAME']}\nGini: {row['Gini']:.2f}\nYear: {int(row['time'])}"
     
-    # Target the exact middle
+
     target_x, target_y = row['centroid'].x, row['centroid'].y
     
-    # Determine absolute borders for margin placement
     minx, miny, maxx, maxy = row['geometry'].bounds
     
     if target_x < map_center_x:
-        # Pacific margin
         initial_x = minx - 4 
     else:
-        # Atlantic margin
         initial_x = maxx + 4
 
-    # Force Matplotlib to create the text AND the line (arrowprops) immediately
     t = ax.annotate(
         label_text,
-        xy=(target_x, target_y),          # The anchor in the middle of the country
-        xytext=(initial_x, target_y),     # The starting position in the margin
+        xy=(target_x, target_y),          # country anchor
+        xytext=(initial_x, target_y),     
         fontsize=8,
         ha='center', va='center',
         bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.9, lw=0.5, edgecolor='black'),
@@ -86,9 +86,8 @@ for idx, row in map_data.iterrows():
 adjust_text(
     texts, 
     ax=ax,
-    force_text=(0.2, 2.0) # Encourage vertical repelling to clear stacked boxes
+    force_text=(0.2, 2.0) 
 )
-
 
 total_bounds = map_data.total_bounds
 ax.set_xlim(total_bounds[0] - 15, total_bounds[2] + 15)
@@ -98,3 +97,22 @@ ax.set_axis_off()
 
 plt.tight_layout()
 plt.show()
+
+
+# Specific plots for Uruguay
+
+uruguay_data = df[df['economy'] == 'URY']
+
+uruguay_indicators = ['Gini', 'GDP_PPP', 'GNI_PPP', 'FDI', 'FOREST_AREA', 'TOTAL_GHG']
+
+for indicator in uruguay_indicators:
+
+    plt.figure()
+
+    plt.plot(uruguay_data['time'], uruguay_data[indicator], marker=0)
+
+    plt.title(f"Uruguay: {indicator}")
+    plt.xlabel("Year")
+    plt.ylabel("Value")
+
+    plt.show()
