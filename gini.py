@@ -11,11 +11,14 @@ indicators = {
     'SI.POV.GINI': 'GINI',
     'NY.GDP.PCAP.PP.CD' : 'GDP_PPP',
     'NY.GNP.PCAP.PP.CD' : 'GNI_PPP',
-    'BX.KLT.DINV.CD.WD' : 'FDI', # foreign direct investment
+    'BX.KLT.DINV.CD.WD' : 'FOREIGN_DIRECT_INVESTMENT', 
     'AG.LND.FRST.ZS' : 'FOREST_AREA', 
     'EN.GHG.ALL.MT.CE.AR5' : 'TOTAL_GHG',
     'EN.GHG.CO2.PC.CE.AR5' : 'CO2_PER_CAP', # tCO2e/capita
-    'BN.CAB.XOKA.CD' : 'BOP' # balance of payments
+    'BN.CAB.XOKA.CD' : 'BALANCE_OF_PAYMENTS',
+    'TM.VAL.FUEL.ZS.UN': 'ENGY_IMPORTS', # Fuel imports (% of merchandise imports)
+    'TX.VAL.FUEL.ZS.UN': 'ENGY_EXPORTS', # Fuel exports (% of merchendise exports)
+    'SI.DST.50MD' : 'POVERTY_BELOW_MEDIAN' # Proportion of people living under 50% of median income
 }
 
 countries = ['ARG', 'BLZ', 'BOL', 'BRA', 'CHL', 'COL', 'CRI', 'ECU', 'GUY', 'SLV', 'GTM', 'HND', 'MEX', 'NIC', 'PAN', 'PRY', 'PER', 'SUR', 'URY', 'VEN']
@@ -97,22 +100,36 @@ plt.tight_layout()
 plt.show()
 
 
-# Uruguay broad survey plots
+# Uruguay Broad Survey Plots
 
 uruguay_data = df[df['economy'] == 'URY']
 
-uruguay_indicators = ['GINI', 'GDP_PPP', 'GNI_PPP', 'FDI', 'FOREST_AREA', 'TOTAL_GHG', 'CO2_PER_CAP', 'BOP']
+uruguay_indicators = ['GINI', 'GDP_PPP', 'GNI_PPP', 'FOREIGN_DIRECT_INVESTMENT', 'FOREST_AREA', 'TOTAL_GHG', 'CO2_PER_CAP', 'BALANCE_OF_PAYMENTS', 'ENGY_IMPORTS', 'ENGY_EXPORTS', 'POVERTY_BELOW_MEDIAN']
+
+# color pallette 
+ECONOMIST_BLUE = '#014d64'
+TEXT_COLOR = '#333333'
 
 for indicator in uruguay_indicators:
-
-    plt.figure()
-
-    plt.plot(uruguay_data['time'], uruguay_data[indicator])
-
-    plt.title(f"Uruguay: {indicator}")
-    plt.xlabel("Year")
-    plt.ylabel("Value")
-
+    fig, ax = plt.subplots(figsize=(8, 5), facecolor='white')
+    
+    ax.plot(uruguay_data['time'], uruguay_data[indicator], color=ECONOMIST_BLUE, linewidth=2.5)
+    
+    ax.spines[['top', 'right', 'left']].set_visible(False)
+    ax.spines['bottom'].set_color(TEXT_COLOR)
+    
+    ax.yaxis.tick_right()
+    ax.tick_params(length=0, colors=TEXT_COLOR) 
+    
+    ax.grid(axis='y', color='#d3d3d3')
+    ax.grid(axis='x', visible=False)
+    ax.set_axisbelow(True)
+    
+    plt.title(f"Uruguay: {indicator}", loc='left', fontsize=14, fontweight='bold', color=TEXT_COLOR)
+    
+    plt.xlabel("")
+    plt.ylabel("")
+    
     plt.show()
 
 # Uruguay EKC (Environmental Kuznet Curve)
@@ -123,26 +140,8 @@ ekc_data['ln_GDP'] = np.log(ekc_data['GDP_PPP'])
 ekc_data['ln_GDP2'] = ekc_data['ln_GDP'] ** 2 
 ekc_data['ln_CO2'] = np.log(ekc_data['CO2_PER_CAP'])
 
-'''
-# Augmented Dickey-Fuller
-def run_adf_test(series, variable_name):
-    result = adfuller(series, autolag='AIC')
-    print(f"--- ADF Test for {variable_name} ---")
-    print(f"ADF Statistic: {result[0]:.4f}")
-    print(f"p-value: {result[1]:.4f}")
-    
-    if result[1] <= 0.05:
-        print("Stationary (Reject Null Hypothesis)\n")
-    else:
-        print("Non-Stationary (Fail to Reject Null Hypothesis)\n")
-
-print("Testing Stationarity (Levels)")
-run_adf_test(ekc_data['ln_GDP'], "Log GDP")
-run_adf_test(ekc_data['ln_CO2'], "Log CO2")
-'''
-
 # fit ekc with OLS 
-print("Fit EKC Model")
+print("Fitting EKC Model")
 ekc_model = smf.ols(formula='ln_CO2 ~ ln_GDP + ln_GDP2', data=ekc_data).fit()
 print(ekc_model.summary())
 
