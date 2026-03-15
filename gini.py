@@ -14,7 +14,8 @@ indicators = {
     'BX.KLT.DINV.CD.WD' : 'FDI', # foreign direct investment
     'AG.LND.FRST.ZS' : 'FOREST_AREA', 
     'EN.GHG.ALL.MT.CE.AR5' : 'TOTAL_GHG',
-    'EN.GHG.CO2.PC.CE.AR5' : 'CO2_PER_CAP' # tCO2e/capita
+    'EN.GHG.CO2.PC.CE.AR5' : 'CO2_PER_CAP', # tCO2e/capita
+    'BN.CAB.XOKA.CD' : 'BOP' # balance of payments
 }
 
 countries = ['ARG', 'BLZ', 'BOL', 'BRA', 'CHL', 'COL', 'CRI', 'ECU', 'GUY', 'SLV', 'GTM', 'HND', 'MEX', 'NIC', 'PAN', 'PRY', 'PER', 'SUR', 'URY', 'VEN']
@@ -96,11 +97,11 @@ plt.tight_layout()
 plt.show()
 
 
-# Uruguay survey plots
+# Uruguay broad survey plots
 
 uruguay_data = df[df['economy'] == 'URY']
 
-uruguay_indicators = ['GINI', 'GDP_PPP', 'GNI_PPP', 'FDI', 'FOREST_AREA', 'TOTAL_GHG', 'CO2_PER_CAP']
+uruguay_indicators = ['GINI', 'GDP_PPP', 'GNI_PPP', 'FDI', 'FOREST_AREA', 'TOTAL_GHG', 'CO2_PER_CAP', 'BOP']
 
 for indicator in uruguay_indicators:
 
@@ -122,6 +123,7 @@ ekc_data['ln_GDP'] = np.log(ekc_data['GDP_PPP'])
 ekc_data['ln_GDP2'] = ekc_data['ln_GDP'] ** 2 
 ekc_data['ln_CO2'] = np.log(ekc_data['CO2_PER_CAP'])
 
+'''
 # Augmented Dickey-Fuller
 def run_adf_test(series, variable_name):
     result = adfuller(series, autolag='AIC')
@@ -137,9 +139,10 @@ def run_adf_test(series, variable_name):
 print("Testing Stationarity (Levels)")
 run_adf_test(ekc_data['ln_GDP'], "Log GDP")
 run_adf_test(ekc_data['ln_CO2'], "Log CO2")
+'''
 
-# fit ekc with OLS
-print("Step 2: Fit EKC Model")
+# fit ekc with OLS 
+print("Fit EKC Model")
 ekc_model = smf.ols(formula='ln_CO2 ~ ln_GDP + ln_GDP2', data=ekc_data).fit()
 print(ekc_model.summary())
 
@@ -147,16 +150,6 @@ print(ekc_model.summary())
 beta_0 = ekc_model.params['Intercept']
 beta_1 = ekc_model.params['ln_GDP']
 beta_2 = ekc_model.params['ln_GDP2']
-
-print("\nStep 3: Evaluating the EKC Hypothesis")
-if beta_1 > 0 and beta_2 < 0:
-    turning_point_log = -beta_1 / (2 * beta_2)
-    turning_point_gdp = np.exp(turning_point_log)
-    print("Result: The EKC inverted U-shape is mathematically validated.")
-    print(f"Theoretical Turning Point: ${turning_point_gdp:,.2f} GDP per capita")
-else:
-    print("Result: The classic EKC inverted U-shape is NOT validated.")
-    print("The coefficients do not show the required initial increase followed by a decrease.")
 
 #viz
 
